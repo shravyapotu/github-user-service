@@ -1,6 +1,6 @@
 package com.example.github_user_service.mapper;
 
-import com.example.github_user_service.model.GithubRepoApi;
+import com.example.github_user_service.model.GithubRepo;
 import com.example.github_user_service.model.GithubUserApi;
 import com.example.github_user_service.model.GithubUserResponse;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ class GithubMapperTest {
         user.setAvatarUrl("img");
         user.setCreatedAt("2020-01-01T00:00:00Z");
 
-        GithubRepoApi repo = new GithubRepoApi();
+        GithubRepo repo = new GithubRepo();
         repo.setName("repo1");
         repo.setHtmlUrl("http://html");
 

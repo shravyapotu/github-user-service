@@ -3,7 +3,7 @@ package com.example.github_user_service.service;
 import com.example.github_user_service.client.GitHubClient;
 import com.example.github_user_service.exception.ResourceNotFoundException;
 import com.example.github_user_service.mapper.GithubMapper;
-import com.example.github_user_service.model.GithubRepoApi;
+import com.example.github_user_service.model.GithubRepo;
 import com.example.github_user_service.model.GithubUserApi;
 import com.example.github_user_service.model.GithubUserResponse;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ class GitHubServiceTest {
         GithubUserApi userApi = new GithubUserApi();
         userApi.setLogin("john");
 
-        List<GithubRepoApi> repos = List.of();
+        List<GithubRepo> repos = List.of();
 
         GithubUserResponse mappedResponse = new GithubUserResponse();
         mappedResponse.setUser_name("john");

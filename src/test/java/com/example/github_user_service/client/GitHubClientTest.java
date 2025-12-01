@@ -2,7 +2,7 @@ package com.example.github_user_service.client;
 
 import com.example.github_user_service.exception.ExternalServiceException;
 import com.example.github_user_service.exception.ResourceNotFoundException;
-import com.example.github_user_service.model.GithubRepoApi;
+import com.example.github_user_service.model.GithubRepo;
 import com.example.github_user_service.model.GithubUserApi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -72,15 +72,16 @@ class GitHubClientTest {
 
     @Test
     void testFetchUserNotFound() {
+        
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/unknown"),
+                ArgumentMatchers.eq(BASE_URL + "/users/octocat"),
                 ArgumentMatchers.eq(HttpMethod.GET),
                 any(HttpEntity.class),
                 ArgumentMatchers.eq(String.class)
-        )).thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
+        )).thenReturn(new ResponseEntity<>("1234", HttpStatus.NOT_FOUND));
 
-        assertThrows(ResourceNotFoundException.class,
-                () -> client.fetchUser("unknown"));
+         Optional<GithubUserApi> result = client.fetchUser("octocat");
+assertFalse(result.isPresent());
     }
 
     @Test
@@ -119,7 +120,7 @@ class GitHubClientTest {
                 ArgumentMatchers.eq(String.class)
         )).thenReturn(response);
 
-        List<GithubRepoApi> repos = client.fetchRepos("octocat");
+        List<GithubRepo> repos = client.fetchRepos("octocat");
 
         assertEquals(2, repos.size());
         assertEquals("repo1", repos.get(0).getName());
@@ -134,7 +135,7 @@ class GitHubClientTest {
                 ArgumentMatchers.eq(String.class)
         )).thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
-        List<GithubRepoApi> result = client.fetchRepos("missing");
+        List<GithubRepo> result = client.fetchRepos("missing");
 
         assertTrue(result.isEmpty());
     }

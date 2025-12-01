@@ -1,6 +1,6 @@
 package com.example.github_user_service.mapper;
 
-import com.example.github_user_service.model.GithubRepoApi;
+import com.example.github_user_service.model.GithubRepo;
 import com.example.github_user_service.model.GithubUserApi;
 import com.example.github_user_service.model.GithubUserResponse;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class GithubMapper {
     private static final DateTimeFormatter OUTPUT_FORMATTER =
             DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC);
 
-    public GithubUserResponse toGithubUserResponse(GithubUserApi user, List<GithubRepoApi> repos) {
+    public GithubUserResponse toGithubUserResponse(GithubUserApi user, List<GithubRepo> repos) {
         GithubUserResponse resp = new GithubUserResponse();
         resp.setUser_name(user.getLogin());
         resp.setDisplay_name(user.getName());

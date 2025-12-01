@@ -2,7 +2,7 @@ package com.example.github_user_service.service;
 
 import com.example.github_user_service.client.GitHubClient;
 import com.example.github_user_service.exception.ResourceNotFoundException;
-import com.example.github_user_service.model.GithubRepoApi;
+import com.example.github_user_service.model.GithubRepo;
 import com.example.github_user_service.model.GithubUserApi;
 import com.example.github_user_service.model.GithubUserResponse;
 import com.example.github_user_service.mapper.GithubMapper;
@@ -32,7 +32,7 @@ public class GitHubService {
         GithubUserApi userApi = gitHubClient.fetchUser(username)
                 .orElseThrow(() -> new ResourceNotFoundException("GitHub user not found: " + username));
 
-        List<GithubRepoApi> repos = gitHubClient.fetchRepos(username);
+        List<GithubRepo> repos = gitHubClient.fetchRepos(username);
 
         // Map to public response DTO
         return mapper.toGithubUserResponse(userApi, repos);

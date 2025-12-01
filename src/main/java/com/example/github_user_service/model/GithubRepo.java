@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Minimal mapping for fields we use from GitHub repos API.
  */
 @Component
-public class GithubRepoApi {
+public class GithubRepo {
 
     private String name;
 
@@ -18,7 +18,7 @@ public class GithubRepoApi {
     @JsonProperty("html_url")
     private String htmlUrl;
 
-    public GithubRepoApi() { }
+    public GithubRepo() { }
 
     // getters / setters
     public String getName() { return name; }

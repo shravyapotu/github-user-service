@@ -1,7 +1,7 @@
 package com.example.github_user_service.client;
 
 import com.example.github_user_service.exception.ExternalServiceException;
-import com.example.github_user_service.model.GithubRepoApi;
+import com.example.github_user_service.model.GithubRepo;
 import com.example.github_user_service.model.GithubUserApi;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,12 +59,12 @@ public class GitHubClient {
         }
     }
 
-    public List<GithubRepoApi> fetchRepos(String username) {
+    public List<GithubRepo> fetchRepos(String username) {
         String url = String.format("%s/users/%s/repos", githubBaseUrl, username);
         try {
             ResponseEntity<String> resp = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(createHeaders()), String.class);
             if (resp.getStatusCode() == HttpStatus.OK && resp.getBody() != null) {
-                return objectMapper.readValue(resp.getBody(), new TypeReference<List<GithubRepoApi>>() {});
+                return objectMapper.readValue(resp.getBody(), new TypeReference<List<GithubRepo>>() {});
             } else if (resp.getStatusCode() == HttpStatus.NOT_FOUND) {
                 return List.of();
             } else {
