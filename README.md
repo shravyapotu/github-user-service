@@ -21,7 +21,7 @@ The goal of the service is to provide an effective way of retrieving and display
 **2. Architectural Summary** 
 
 The modular, layered structure of this application will ensure flexibility and ease of maintenance.
-![Service Architecture Diagram](images/architecture.png)
+![Service Architecture Diagram](images/Architecture.png)
  
 
 **Design Explanation**
