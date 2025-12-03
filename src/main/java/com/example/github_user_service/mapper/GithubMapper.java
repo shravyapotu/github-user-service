@@ -1,28 +1,26 @@
 package com.example.github_user_service.mapper;
 
 import com.example.github_user_service.model.GithubRepo;
-import com.example.github_user_service.model.GithubUserApi;
-import com.example.github_user_service.model.GithubUserResponse;
+import com.example.github_user_service.model.GithubUser;
+import com.example.github_user_service.model.UserResponse;
 import org.springframework.stereotype.Component;
-
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Mapping between GitHub API DTOs and public response DTO.
- * Keeps mapping logic isolated and testable.
- */
+//Component responsible for mapping raw data models received from the GitHub API
 @Component
 public class GithubMapper {
 
     private static final DateTimeFormatter OUTPUT_FORMATTER =
             DateTimeFormatter.RFC_1123_DATE_TIME.withZone(ZoneOffset.UTC);
 
-    public GithubUserResponse toGithubUserResponse(GithubUserApi user, List<GithubRepo> repos) {
-        GithubUserResponse resp = new GithubUserResponse();
+//Aggregates user profile data and repository lists into the final UserResponse DTO
+
+    public UserResponse toGithubUserResponse(GithubUser user, List<GithubRepo> repos) {
+        UserResponse resp = new UserResponse();
         resp.setUser_name(user.getLogin());
         resp.setDisplay_name(user.getName());
         resp.setAvatar(user.getAvatarUrl());
@@ -40,11 +38,11 @@ public class GithubMapper {
                 resp.setCreated_at(user.getCreatedAt());
             }
         }
-
-        List<GithubUserResponse.RepoInfo> repoInfos = repos == null ? List.of() :
+// Repository Mapping
+        List<UserResponse.RepoInfo> repoInfos = repos == null ? List.of() :
                 repos.stream()
                         .map(r -> {
-                            GithubUserResponse.RepoInfo ri = new GithubUserResponse.RepoInfo();
+                            UserResponse.RepoInfo ri = new UserResponse.RepoInfo();
                             ri.setName(r.getName());
                             // prefer html_url if provided, otherwise api url
                             String repoUrl = r.getHtmlUrl() != null ? r.getHtmlUrl() :

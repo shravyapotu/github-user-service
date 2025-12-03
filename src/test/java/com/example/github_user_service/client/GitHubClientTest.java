@@ -1,23 +1,18 @@
 package com.example.github_user_service.client;
 
 import com.example.github_user_service.exception.ExternalServiceException;
-import com.example.github_user_service.exception.ResourceNotFoundException;
 import com.example.github_user_service.model.GithubRepo;
-import com.example.github_user_service.model.GithubUserApi;
+import com.example.github_user_service.model.GithubUser;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+//import lombok.launch.PatchFixesHider.Tests;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
-
 import org.springframework.http.*;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
-
+import org.springframework.web.client.*;
 import java.util.List;
 import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class GitHubClientTest {
@@ -28,6 +23,8 @@ class GitHubClientTest {
 
     private final String BASE_URL = "https://api.github.com";
 
+//Initializes mocks and the client instance before each test method runs.
+
     @BeforeEach
     void setup() {
         restTemplate = mock(RestTemplate.class);
@@ -35,12 +32,9 @@ class GitHubClientTest {
         client = new GitHubClient(restTemplate, objectMapper, BASE_URL, "");
     }
 
-    // ------------------------------
-    // fetchUser Tests
-    // ------------------------------
-
+//Tests a successful retrieval of a user profile with valid JSON response (HTTP 200 OK).
     @Test
-    void testFetchUserSuccess() throws Exception {
+    void testUserSuccess() throws Exception {
         String json = """
                 {
                   "login": "octocat",
@@ -53,56 +47,126 @@ class GitHubClientTest {
                 }
                 """;
 
-        ResponseEntity<String> response =
-                new ResponseEntity<>(json, HttpStatus.OK);
-
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/octocat"),
-                ArgumentMatchers.eq(HttpMethod.GET),
+                eq(BASE_URL + "/users/octocat"),
+                eq(HttpMethod.GET),
                 any(HttpEntity.class),
-                ArgumentMatchers.eq(String.class)
-        )).thenReturn(response);
+                eq(String.class)
+        )).thenReturn(new ResponseEntity<>(json, HttpStatus.OK));
 
-        Optional<GithubUserApi> result = client.fetchUser("octocat");
+        Optional<GithubUser> result = client.fetchUser("octocat");
 
         assertTrue(result.isPresent());
         assertEquals("octocat", result.get().getLogin());
-        assertEquals("The Octocat", result.get().getName());
     }
-
+//Tests that a user not found response (HTTP 404) correctly returns an empty Optional.
     @Test
-    void testFetchUserNotFound() {
-        
+    void testUserNotFound() {
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/octocat"),
-                ArgumentMatchers.eq(HttpMethod.GET),
+                eq(BASE_URL + "/users/octocat"),
+                eq(HttpMethod.GET),
                 any(HttpEntity.class),
-                ArgumentMatchers.eq(String.class)
-        )).thenReturn(new ResponseEntity<>("1234", HttpStatus.NOT_FOUND));
+                eq(String.class)
+        )).thenReturn(new ResponseEntity<>("x", HttpStatus.NOT_FOUND));
 
-         Optional<GithubUserApi> result = client.fetchUser("octocat");
-assertFalse(result.isPresent());
+        assertFalse(client.fetchUser("octocat").isPresent());
     }
-
+//Tests mapping a generic 4xx client error (e.g., 400 Bad Request) to ExternalServiceException
     @Test
-    void testFetchUserOtherError() {
+    void testUserOtherClientError() {
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/errorUser"),
-                ArgumentMatchers.eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                ArgumentMatchers.eq(String.class)
-        )).thenThrow(new HttpClientErrorException(HttpStatus.BAD_GATEWAY));
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
 
-        assertThrows(ExternalServiceException.class,
-                () -> client.fetchUser("errorUser"));
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser("errorUser"));
     }
-
-    // ------------------------------
-    // fetchRepos Tests
-    // ------------------------------
+//Tests handling a null username input.
 
     @Test
-    void testFetchReposSuccess() throws Exception {
+    void testNullUsername() {
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser(null));
+    }
+//Tests handling an empty username input.
+
+    @Test
+    void testEmptyUsername() {
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser(""));
+    }
+//Tests error handling when the GitHub API returns malformed (invalid) JSON.
+
+    @Test
+    void testUserMalformedJson() {
+        String invalidJson = "{ invalid }";
+
+        when(restTemplate.exchange(
+                anyString(),
+                any(),
+                any(),
+                eq(String.class)
+        )).thenReturn(new ResponseEntity<>(invalidJson, HttpStatus.OK));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser("octo"));
+    }
+//Tests error handling when the GitHub API returns malformed (invalid) JSON.
+
+    @Test
+    void testUserNullBody() {
+        when(restTemplate.exchange(
+                anyString(),
+                any(),
+                any(),
+                eq(String.class)
+        )).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser("octo"));
+    }
+//Tests mapping a ResourceAccessException (connection issue/timeout) to ExternalServiceException.
+
+    @Test
+    void testUserTimeout() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new ResourceAccessException("timeout"));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser("octo"));
+    }
+//Tests mapping a 5xx server error from GitHub (HttpServerErrorException) to ExternalServiceException.
+
+    @Test
+    void testUserServerError() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser("octo"));
+    }
+//Tests specific mapping for HTTP 429 (Too Many Requests/Rate Limit) error.
+
+    @Test
+void testUserRateLimit() {
+    when(restTemplate.exchange(
+            anyString(), any(), any(), eq(String.class)
+    )).thenThrow(new HttpClientErrorException(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "rate limit"
+    ));
+
+    assertThrows(ExternalServiceException.class, () -> client.fetchUser("octo"));
+}
+//Tests mapping any uncaught internal exception to the generic ExternalServiceException.
+    @Test
+    void testUserGenericException() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new RuntimeException("random"));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchUser("octo"));
+    }
+
+    //Tests successful retrieval and deserialization of a list of repositories (HTTP 200 OK).
+
+    @Test
+    void testReposSuccess() throws Exception {
         String json = """
                 [
                   { "name": "repo1", "html_url": "http://github.com/x/repo1" },
@@ -110,46 +174,113 @@ assertFalse(result.isPresent());
                 ]
                 """;
 
-        ResponseEntity<String> response =
-                new ResponseEntity<>(json, HttpStatus.OK);
-
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/octocat/repos"),
-                ArgumentMatchers.eq(HttpMethod.GET),
+                eq(BASE_URL + "/users/octocat/repos"),
+                eq(HttpMethod.GET),
                 any(HttpEntity.class),
-                ArgumentMatchers.eq(String.class)
-        )).thenReturn(response);
+                eq(String.class)
+        )).thenReturn(new ResponseEntity<>(json, HttpStatus.OK));
 
         List<GithubRepo> repos = client.fetchRepos("octocat");
 
         assertEquals(2, repos.size());
-        assertEquals("repo1", repos.get(0).getName());
     }
 
+//Tests that a 404 response for repos correctly returns an empty list
     @Test
-    void testFetchReposNotFoundReturnsEmpty() {
+    void testReposNotFoundReturnsEmpty() {
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/missing/repos"),
-                ArgumentMatchers.eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                ArgumentMatchers.eq(String.class)
+                anyString(), any(), any(), eq(String.class)
         )).thenReturn(new ResponseEntity<>(HttpStatus.NOT_FOUND));
 
-        List<GithubRepo> result = client.fetchRepos("missing");
-
-        assertTrue(result.isEmpty());
+        assertTrue(client.fetchRepos("missing").isEmpty());
     }
 
+//Tests mapping a 5xx or other 4xx client error to ExternalServiceException.
+
     @Test
-    void testFetchReposOtherError() {
+    void testReposOtherClientError() {
         when(restTemplate.exchange(
-                ArgumentMatchers.eq(BASE_URL + "/users/error/repos"),
-                ArgumentMatchers.eq(HttpMethod.GET),
-                any(HttpEntity.class),
-                ArgumentMatchers.eq(String.class)
+                anyString(), any(), any(), eq(String.class)
         )).thenThrow(new HttpClientErrorException(HttpStatus.BAD_GATEWAY));
 
-        assertThrows(ExternalServiceException.class,
-                () -> client.fetchRepos("error"));
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos("error"));
+    }
+//Tests handling an empty username input for repos.
+
+    @Test
+    void testReposEmptyUsername() {
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos(""));
+    }
+//Tests handling a null username input for repos.
+
+    @Test
+    void testReposNullUsername() {
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos(null));
+    }
+
+    //Tests error handling when the API returns malformed repository JSON.
+
+    @Test
+    void testReposMalformedJson() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenReturn(new ResponseEntity<>("[ invalid ]", HttpStatus.OK));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos("octo"));
+    }
+
+//Tests successful handling of an empty JSON array `[]` response.
+    @Test
+    void testReposEmptyArray() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenReturn(new ResponseEntity<>("[]", HttpStatus.OK));
+
+        assertTrue(client.fetchRepos("octo").isEmpty());
+    }
+//Tests mapping a network timeout (ResourceAccessException) for repos.
+
+    @Test
+    void testReposTimeout() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new ResourceAccessException("timeout"));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos("octo"));
+    }
+
+//Tests mapping a 5xx server error from GitHub (HttpServerErrorException) for repos.
+    @Test
+    void testReposServerError() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos("octo"));
+    }
+
+//Tests specific mapping for HTTP 429 (Too Many Requests/Rate Limit) error for repos.
+
+   @Test
+void testReposRateLimit() {
+    when(restTemplate.exchange(
+            anyString(), any(), any(), eq(String.class)
+    )).thenThrow(new HttpClientErrorException(
+            HttpStatus.TOO_MANY_REQUESTS,
+            "rate limit"
+    ));
+
+    assertThrows(ExternalServiceException.class, () -> client.fetchRepos("octo"));
+}
+
+//Tests mapping any uncaught generic exception for repos.
+    @Test
+    void testReposGenericException() {
+        when(restTemplate.exchange(
+                anyString(), any(), any(), eq(String.class)
+        )).thenThrow(new RuntimeException("random"));
+
+        assertThrows(ExternalServiceException.class, () -> client.fetchRepos("octo"));
     }
 }

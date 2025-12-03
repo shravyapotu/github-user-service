@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+//setting caching mechanism
 @Configuration
 public class CacheConfig {
 

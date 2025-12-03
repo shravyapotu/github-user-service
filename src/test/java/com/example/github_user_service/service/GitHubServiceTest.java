@@ -4,8 +4,8 @@ import com.example.github_user_service.client.GitHubClient;
 import com.example.github_user_service.exception.ResourceNotFoundException;
 import com.example.github_user_service.mapper.GithubMapper;
 import com.example.github_user_service.model.GithubRepo;
-import com.example.github_user_service.model.GithubUserApi;
-import com.example.github_user_service.model.GithubUserResponse;
+import com.example.github_user_service.model.GithubUser;
+import com.example.github_user_service.model.UserResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,28 +30,31 @@ class GitHubServiceTest {
     @InjectMocks
     private GitHubService service;
 
+    //Tests a successful end-to-end data flow
+
     @Test
-    void getUser_success() {
-        GithubUserApi userApi = new GithubUserApi();
+    void getUserSuccess() {
+        GithubUser userApi = new GithubUser();
         userApi.setLogin("john");
 
         List<GithubRepo> repos = List.of();
 
-        GithubUserResponse mappedResponse = new GithubUserResponse();
-        mappedResponse.setUser_name("john");
+        UserResponse mappedResponse = new UserResponse();
+        mappedResponse.setUser_name("shravya");
 
-        when(client.fetchUser("john")).thenReturn(Optional.of(userApi));
-        when(client.fetchRepos("john")).thenReturn(repos);
+        when(client.fetchUser("shravya")).thenReturn(Optional.of(userApi));
+        when(client.fetchRepos("shravya")).thenReturn(repos);
         when(mapper.toGithubUserResponse(userApi, repos)).thenReturn(mappedResponse);
 
-        GithubUserResponse result = service.getUser("john");
+        UserResponse result = service.getUser("shravya");
 
         assertNotNull(result);
-        assertEquals("john", result.getUser_name());
+        assertEquals("shravya", result.getUser_name());
     }
+//Tests the core business logic rule
 
     @Test
-    void getUser_userNotFound_shouldThrowException() {
+    void testGetUserNotFoundThrowsException() {
         when(client.fetchUser("unknown")).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> service.getUser("unknown"));
